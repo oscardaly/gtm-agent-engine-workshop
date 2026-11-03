@@ -16,12 +16,20 @@ __all__ = [
     "get_offering", "get_prospect_record", "update_prospect_info",
     "fetch_engagement_history", "fetch_account_details", "fetch_tech_stack",
     "get_profile_from_db", "save_profile_to_db",
-    "get_rep",
+    "get_rep", "without_sensitive_fields",
 ]
 
 # Built prospect profiles are cached in memory (keyed by prospect_id) so repeat
 # lookups within a run are served without rebuilding.
 _PROFILES = {}
+
+SENSITIVE_FIELDS = ("billing_qualification",)
+
+
+def without_sensitive_fields(record):
+    "Return a copy of a record without sensitive fields."
+    return {key: value for key, value in record.items() if key not in SENSITIVE_FIELDS}
+
 
 # ---------------------------------------------------------------------------
 # Public data-access functions
@@ -63,7 +71,8 @@ def fetch_tech_stack(prospect_id):
 @traceable(run_type="tool", name="get_profile_from_db")
 def get_profile_from_db(prospect_id):
     "Look up a stored prospect profile. Returns {'prospect_profile': record|None}."
-    return {"prospect_profile": _PROFILES.get(prospect_id)}
+    profile = _PROFILES.get(prospect_id)
+    return {"prospect_profile": without_sensitive_fields(profile) if profile is not None else None}
 
 
 @traceable(run_type="tool", name="save_profile_to_db")
